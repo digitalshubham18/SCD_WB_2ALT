@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .calculator {
+            background-color: #333;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .display-container {
+            background-color: #eee;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        
+        .previous-operation {
+            font-size: 16px;
+            color: #666;
+            height: 20px;
+            overflow: hidden;
+        }
+        
+        .current-input {
+            font-size: 24px;
+            height: 30px;
+            overflow: hidden;
+        }
+        
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        button {
+            border: none;
+            border-radius: 5px;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            opacity: 0.8;
+        }
+        
+        .number {
+            background-color: #666;
+            color: white;
+        }
+        
+        .operator {
+            background-color: #ff9500;
+            color: white;
+        }
+        
+        .clear, .delete {
+            background-color: #a5a5a5;
+        }
+        
+        .equals {
+            background-color: #ff9500;
+            color: white;
+            grid-column: span 2;
+        }
+        
+        .error {
+            color: red;
+            font-size: 14px;
+            height: 20px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display-container">
+            <div class="previous-operation" id="previous-operation"></div>
+            <div class="current-input" id="current-input">0</div>
+        </div>
+        <div class="error" id="error"></div>
+        <div class="buttons">
+            <button class="clear" id="clear">AC</button>
+            <button class="delete" id="delete">DEL</button>
+            <button class="operator" id="divide">/</button>
+            <button class="operator" id="multiply">*</button>
+            
+            <button class="number" id="seven">7</button>
+            <button class="number" id="eight">8</button>
+            <button class="number" id="nine">9</button>
+            <button class="operator" id="subtract">-</button>
+            
+            <button class="number" id="four">4</button>
+            <button class="number" id="five">5</button>
+            <button class="number" id="six">6</button>
+            <button class="operator" id="add">+</button>
+            
+            <button class="number" id="one">1</button>
+            <button class="number" id="two">2</button>
+            <button class="number" id="three">3</button>
+            <button class="operator" id="equals">=</button>
+            
+            <button class="number" id="zero">0</button>
+            <button class="number" id="decimal">.</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentInputElement = document.getElementById('current-input');
+            const previousOperationElement = document.getElementById('previous-operation');
+            const errorElement = document.getElementById('error');
+            const numberButtons = document.querySelectorAll('.number');
+            const operatorButtons = document.querySelectorAll('.operator');
+            const clearButton = document.getElementById('clear');
+            const deleteButton = document.getElementById('delete');
+            const equalsButton = document.getElementById('equals');
+            
+            let currentInput = '0';
+            let previousInput = '';
+            let operation = null;
+            let resetScreen = false;
+            
+            
+            function updateDisplay() {
+                currentInputElement.textContent = currentInput;
+                
+                if (operation !== null) {
+                    previousOperationElement.textContent = `${previousInput} ${operation}`;
+                } else {
+                    previousOperationElement.textContent = '';
+                }
+            }
+            
+            
+            function clear() {
+                currentInput = '0';
+                previousInput = '';
+                operation = null;
+                resetScreen = false;
+                errorElement.textContent = '';
+                updateDisplay();
+            }
+            
+            
+            function deleteLastChar() {
+                if (currentInput.length === 1 || (currentInput.length === 2 && currentInput.startsWith('-'))) {
+                    currentInput = '0';
+                } else {
+                    currentInput = currentInput.slice(0, -1);
+                }
+                updateDisplay();
+            }
+            
+           
+            function appendNumber(number) {
+                if (currentInput === '0' || resetScreen) {
+                    currentInput = number;
+                    resetScreen = false;
+                } else {
+                    currentInput += number;
+                }
+                updateDisplay();
+            }
+            
+           
+            function appendDecimal() {
+                if (resetScreen) {
+                    currentInput = '0.';
+                    resetScreen = false;
+                    updateDisplay();
+                    return;
+                }
+                
+                if (!currentInput.includes('.')) {
+                    currentInput += '.';
+                    updateDisplay();
+                }
+            }
+            
+            
+            function setOperation(op) {
+                if (operation !== null && !resetScreen) {
+                    calculate();
+                }
+                
+                previousInput = currentInput;
+                operation = op;
+                resetScreen = true;
+                updateDisplay();
+            }
+            
+            
+            function calculate() {
+                let result;
+                const prev = parseFloat(previousInput);
+                const current = parseFloat(currentInput);
+                
+                if (isNaN(prev) || isNaN(current)) {
+                    showError("Invalid input");
+                    return;
+                }
+                
+                try {
+                    switch (operation) {
+                        case '+':
+                            result = prev + current;
+                            break;
+                        case '-':
+                            result = prev - current;
+                            break;
+                        case '*':
+                            result = prev * current;
+                            break;
+                        case '/':
+                            if (current === 0) {
+                                showError("Cannot divide by zero");
+                                return;
+                            }
+                            result = prev / current;
+                            break;
+                        default:
+                            return;
+                    }
+                    
+                    currentInput = result.toString();
+                    operation = null;
+                    previousInput = '';
+                    resetScreen = true;
+                    updateDisplay();
+                } catch (error) {
+                    showError("Calculation error");
+                }
+            }
+            
+            
+            function showError(message) {
+                errorElement.textContent = message;
+                setTimeout(() => {
+                    errorElement.textContent = '';
+                }, 2000);
+            }
+            
+            
+            function handleKeyboardInput(e) {
+                if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+                    if (e.key === '.') {
+                        appendDecimal();
+                    } else {
+                        appendNumber(e.key);
+                    }
+                } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+                    setOperation(e.key);
+                } else if (e.key === 'Enter' || e.key === '=') {
+                    e.preventDefault();
+                    calculate();
+                } else if (e.key === 'Escape') {
+                    clear();
+                } else if (e.key === 'Backspace') {
+                    deleteLastChar();
+                }
+            }
+            
+            
+            numberButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (button.id === 'decimal') {
+                        appendDecimal();
+                    } else {
+                        appendNumber(button.textContent);
+                    }
+                });
+            });
+            
+           
+            operatorButtons.forEach(button => {
+                if (button.id !== 'equals') {
+                    button.addEventListener('click', () => {
+                        setOperation(button.textContent);
+                    });
+                }
+            });
+            
+            
+            equalsButton.addEventListener('click', calculate);
+            clearButton.addEventListener('click', clear);
+            deleteButton.addEventListener('click', deleteLastChar);
+            
+            
+            document.addEventListener('keydown', handleKeyboardInput);
+            
+            
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>
